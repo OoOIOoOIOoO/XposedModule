@@ -8,7 +8,6 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 import com.ooo.xposedmodule.hook.Game_GameView_addScore_Hook;
 import com.ooo.xposedmodule.hook.Game_GameView_explode_Hook;
-import com.ooo.xposedmodule.hook.Recp;
 import com.ooo.xposedmodule.hook.cloudmusic_c;
 
 public class XposedModuleAction implements IXposedHookLoadPackage {
@@ -38,14 +37,14 @@ public class XposedModuleAction implements IXposedHookLoadPackage {
                     fun_name_game_explode, new Game_GameView_explode_Hook());
         }
 
-        if (loadPackageParam.packageName.equals(class_workspace_pakg)) {
-            Log.i("zzmhook:sucess:", loadPackageParam.packageName);
-            XposedBridge.log(LD_TAG + loadPackageParam.packageName + "=== 开始hook注入app进程.");
-
-            XposedHelpers.findAndHookMethod(class_workspace_activity, loadPackageParam.classLoader,
-                    class_fun_test, new Recp());
-
-        }
+//        if (loadPackageParam.packageName.equals(class_workspace_pakg)) {
+//            Log.i("zzmhook:sucess:", loadPackageParam.packageName);
+//            XposedBridge.log(LD_TAG + loadPackageParam.packageName + "=== 开始hook注入app进程.");
+//
+//            XposedHelpers.findAndHookMethod(class_workspace_activity, loadPackageParam.classLoader,
+//                    class_fun_test, new Recp());
+//
+//        }
 
         if (loadPackageParam.packageName.equals(class_cloudmusic_pakg)) {
             Log.i("zzmhook:sucess:", loadPackageParam.packageName);
