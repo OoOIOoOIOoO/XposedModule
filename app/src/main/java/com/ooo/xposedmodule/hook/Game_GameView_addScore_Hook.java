@@ -1,8 +1,8 @@
-package com.myzzm.xposedmodule.hook;
+package com.ooo.xposedmodule.hook;
 
 import android.util.Log;
 
-import com.myzzm.xposedmodule.XposedModuleAction;
+import com.ooo.xposedmodule.XposedModuleAction;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
