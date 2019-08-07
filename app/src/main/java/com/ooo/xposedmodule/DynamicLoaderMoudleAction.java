@@ -28,9 +28,9 @@ public class DynamicLoaderMoudleAction implements IXposedHookLoadPackage {
     private static List<String> hostAppPackages = new ArrayList<>();
 //    进行hook处理的类,将assets/xposed_init的类改为这个,就变为了重启后模块生效
     private String xposedModuleActionClass = XposedModuleAction.class.getName();
-
+//    要把hook的包名加到这里
     static {
-        hostAppPackages.add("com.netease.cloudmusic");
+        hostAppPackages.add(XposedModuleAction.class_cloudmusic_pakg);
     }
 
     @Override
