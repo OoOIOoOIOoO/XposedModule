@@ -2,15 +2,19 @@ package com.ooo.xposedmodule;
 
 import android.util.Log;
 import de.robv.android.xposed.IXposedHookLoadPackage;
+import de.robv.android.xposed.IXposedHookZygoteInit;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 import com.ooo.xposedmodule.hook.Game_GameView_addScore_Hook;
 import com.ooo.xposedmodule.hook.Game_GameView_explode_Hook;
+import com.ooo.xposedmodule.hook.XDebugable;
 import com.ooo.xposedmodule.hook.cloudmusic_c;
 
-public class XposedModuleAction implements IXposedHookLoadPackage {
+import static com.ooo.xposedmodule.HookPkgNames.TAG;
+
+public class XposedModuleAction implements IXposedHookLoadPackage{
     public static final String LD_TAG = "XPOSED-MODULE";
 
     /**
@@ -24,7 +28,7 @@ public class XposedModuleAction implements IXposedHookLoadPackage {
      */
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam)throws Throwable {
-        Log.i("zzmhook:", loadPackageParam.packageName);
+        Log.i(TAG, loadPackageParam.packageName);
         if (loadPackageParam.packageName.equals(pck_game)) {
             Log.i("zzmhook:sucess:", loadPackageParam.packageName);
 
@@ -47,7 +51,7 @@ public class XposedModuleAction implements IXposedHookLoadPackage {
 //        }
 
         if (loadPackageParam.packageName.equals(class_cloudmusic_pakg)) {
-            Log.i("zzmhook:sucess:", loadPackageParam.packageName);
+            Log.i(TAG, loadPackageParam.packageName);
             XposedBridge.log(LD_TAG + loadPackageParam.packageName + "=== 开始hook注入app进程.");
 //            XposedHelpers.findAndHookMethod(class_cloudmusic_UserPrivilege, loadPackageParam.classLoader,
 //                    class_fun_fromJson, org.json.JSONObject.class, new cloudmusic_UserInfo());
@@ -80,7 +84,5 @@ public class XposedModuleAction implements IXposedHookLoadPackage {
     public static final String class_fun_fromJsonForProfileList= "fromJsonForProfileList";//JSONObject long
     public static final String class_cloudmusic_UserJson = "com.netease.cloudmusic.b.a.a";
     public static final String class_fun_UserJson_a= "a";//JSONObject boolean
-
-
 
 }

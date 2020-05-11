@@ -1,8 +1,12 @@
 package com.ooo.xposedmodule;
+
 import android.app.Application;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.util.Log;
+
+import com.ooo.xposedmodule.hook.XDebugable;
+
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -10,32 +14,37 @@ import java.util.List;
 
 import dalvik.system.PathClassLoader;
 import de.robv.android.xposed.IXposedHookLoadPackage;
+import de.robv.android.xposed.IXposedHookZygoteInit;
 import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
+
+import static com.ooo.xposedmodule.HookPkgNames.TAG;
 import static de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
 /**
  * @author OoO
- *        由于每次都要手动加载模块的apk,所以性能会有损耗
- *        调试完成可以将assets/xposed_init的类改为xposedModuleActionClass
+ * 由于每次都要手动加载模块的apk,所以性能会有损耗
+ * 调试完成可以将assets/xposed_init的类改为xposedModuleActionClass
  */
 
-public class DynamicLoaderMoudleAction implements IXposedHookLoadPackage {
+public class DynamicLoaderMoudleAction implements IXposedHookLoadPackage, IXposedHookZygoteInit {
 
-//    该模块的包名,移植请更换
+    //    该模块的包名,移植请更换
     private final String thisModulePackage = "com.ooo.xposedmodule";
-//    要hook的packageList
-    private static List<String> hostAppPackages = new ArrayList<>();
-//    进行hook处理的类,将assets/xposed_init的类改为这个,就变为了重启后模块生效
+    //    要hook的packageList
+    public static List<String> hostAppPackages = new ArrayList<>();
+    //    进行hook处理的类,将assets/xposed_init的类改为这个,就变为了重启后模块生效
     private String xposedModuleActionClass = XposedModuleAction.class.getName();
-//    要把hook的包名加到这里
+
+    //    要把hook的包名加到这里
     static {
-        hostAppPackages.add(XposedModuleAction.class_cloudmusic_pakg);
+        hostAppPackages.add(HookPkgNames.SCP35);
+        hostAppPackages.add(HookPkgNames.DRINKMILK);
     }
 
     @Override
     public void handleLoadPackage(final LoadPackageParam loadPackageParam) throws Throwable {
-
         if (hostAppPackages.contains(loadPackageParam.packageName)) {
             //将loadPackageParam的classloader替换为要hook程序Application的classloader,解决多dex导致ClassNotFound的问题
             XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
@@ -49,8 +58,8 @@ public class DynamicLoaderMoudleAction implements IXposedHookLoadPackage {
         }
     }
 
-    private void invokeHandleHookMethod(Context context,String thisAppPackage, String xposedModuleActionClass, LoadPackageParam loadPackageParam) throws Throwable {
-        String apkPath = getAppPath(context,thisAppPackage);
+    private void invokeHandleHookMethod(Context context, String thisAppPackage, String xposedModuleActionClass, LoadPackageParam loadPackageParam) throws Throwable {
+        String apkPath = getAppPath(context, thisAppPackage);
         PathClassLoader pathClassLoader = new PathClassLoader(apkPath, ClassLoader.getSystemClassLoader());
         Class<?> cls = Class.forName(xposedModuleActionClass, true, pathClassLoader);
         Object instance = cls.newInstance();
@@ -58,17 +67,25 @@ public class DynamicLoaderMoudleAction implements IXposedHookLoadPackage {
         method.invoke(instance, loadPackageParam);
     }
 
-    private String getAppPath(Context context,String thisModulePackage){
+    private String getAppPath(Context context, String thisModulePackage) {
         String apkPath = null;
         try {
-            apkPath = context.getPackageManager().getApplicationInfo(thisModulePackage,0).publicSourceDir;
+            apkPath = context.getPackageManager().getApplicationInfo(thisModulePackage, 0).publicSourceDir;
         } catch (PackageManager.NameNotFoundException e) {
-            Log.e("xposedmodule","getPackageManager not found" + e);
+            Log.e(TAG, "getPackageManager not found" + e);
         }
         if (new File(apkPath).exists())
             return apkPath;
-        Log.e("xposedmodule","加载" + thisModulePackage + "出错,未找到apk文件");
+        Log.e(TAG, "加载" + thisModulePackage + "出错,未找到apk文件");
         return null;
     }
 
+    // 实现的接口IXposedHookZygoteInit的函数
+    @Override
+    public void initZygote(final IXposedHookZygoteInit.StartupParam startupParam) throws Throwable {
+        // /frameworks/base/core/java/android/os/Process.java
+        // Hook类android.os.Process的start函数
+        Log.e(TAG, "initZygote");
+        XposedBridge.hookAllMethods(android.os.Process.class, "start", new XDebugable());
+    }
 }
