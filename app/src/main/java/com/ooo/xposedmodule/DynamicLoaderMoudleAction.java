@@ -39,8 +39,7 @@ public class DynamicLoaderMoudleAction implements IXposedHookLoadPackage, IXpose
 
     //    要把hook的包名加到这里
     static {
-        hostAppPackages.add(HookPkgNames.SCP35);
-        hostAppPackages.add(HookPkgNames.DRINKMILK);
+        hostAppPackages.add(HookPkgNames.TEST);
     }
 
     @Override
