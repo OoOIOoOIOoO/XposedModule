@@ -11,6 +11,7 @@ import com.ooo.xposedmodule.hook.Game_GameView_addScore_Hook;
 import com.ooo.xposedmodule.hook.Game_GameView_explode_Hook;
 import com.ooo.xposedmodule.hook.XDebugable;
 import com.ooo.xposedmodule.hook.cloudmusic_c;
+import com.ooo.xposedmodule.hook.unity.UnityPlayer_UnitySendMessage;
 
 import static com.ooo.xposedmodule.HookPkgNames.TAG;
 
@@ -29,6 +30,9 @@ public class XposedModuleAction implements IXposedHookLoadPackage{
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam)throws Throwable {
         Log.i(TAG, loadPackageParam.packageName);
+        XposedBridge.hookAllMethods(XposedHelpers.findClass("com.unity3d.player.UnityPlayer", loadPackageParam.classLoader),
+                "UnitySendMessage", new UnityPlayer_UnitySendMessage());
+
         if (loadPackageParam.packageName.equals(pck_game)) {
             Log.i("zzmhook:sucess:", loadPackageParam.packageName);
 
@@ -41,14 +45,6 @@ public class XposedModuleAction implements IXposedHookLoadPackage{
                     fun_name_game_explode, new Game_GameView_explode_Hook());
         }
 
-//        if (loadPackageParam.packageName.equals(class_workspace_pakg)) {
-//            Log.i("zzmhook:sucess:", loadPackageParam.packageName);
-//            XposedBridge.log(LD_TAG + loadPackageParam.packageName + "=== 开始hook注入app进程.");
-//
-//            XposedHelpers.findAndHookMethod(class_workspace_activity, loadPackageParam.classLoader,
-//                    class_fun_test, new Recp());
-//
-//        }
 
         if (loadPackageParam.packageName.equals(class_cloudmusic_pakg)) {
             Log.i(TAG, loadPackageParam.packageName);

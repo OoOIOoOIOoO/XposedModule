@@ -39,7 +39,7 @@ public class DynamicLoaderMoudleAction implements IXposedHookLoadPackage, IXpose
 
     //    要把hook的包名加到这里
     static {
-        hostAppPackages.add(HookPkgNames.TEST);
+        hostAppPackages.add(HookPkgNames.BINGOFIGHTER);
     }
 
     @Override
