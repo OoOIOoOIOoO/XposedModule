@@ -21,7 +21,7 @@ public final class XPLog {
         }
         if (iLogLevel <= priority) { //todo 循环打印
             String buf = null;
-            int start = 0, end = 0, nsize = 1000, len = msg.length();
+            int start = 0, end = 0, nsize = 4000, len = msg.length();
             while (start < len) {
                 end = (start + nsize) < len ? start + nsize : len;
                 buf = msg.substring(start, end);

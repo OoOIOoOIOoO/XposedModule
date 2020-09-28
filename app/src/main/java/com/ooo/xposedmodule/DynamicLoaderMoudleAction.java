@@ -2,10 +2,18 @@ package com.ooo.xposedmodule;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Bundle;
 import android.util.Log;
 
 import com.ooo.xposedmodule.hook.XDebugable;
+import com.ooo.xposedmodule.util.Utils;
+import com.ooo.xposedmodule.util.XPLog;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -32,29 +40,24 @@ public class DynamicLoaderMoudleAction implements IXposedHookLoadPackage, IXpose
 
     //    该模块的包名,移植请更换
     private final String thisModulePackage = "com.ooo.xposedmodule";
-    //    要hook的packageList
-    public static List<String> hostAppPackages = new ArrayList<>();
     //    进行hook处理的类,将assets/xposed_init的类改为这个,就变为了重启后模块生效
     private String xposedModuleActionClass = XposedModuleAction.class.getName();
 
-    //    要把hook的包名加到这里
-    static {
-        hostAppPackages.add(HookPkgNames.BINGOFIGHTER);
-    }
-
     @Override
     public void handleLoadPackage(final LoadPackageParam loadPackageParam) throws Throwable {
-        if (hostAppPackages.contains(loadPackageParam.packageName)) {
-            //将loadPackageParam的classloader替换为要hook程序Application的classloader,解决多dex导致ClassNotFound的问题
-            XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    Context context = ((Context) param.args[0]);
-                    loadPackageParam.classLoader = context.getClassLoader();
-                    invokeHandleHookMethod(context, thisModulePackage, xposedModuleActionClass, loadPackageParam);
-                }
-            });
+        if(!(new JSONObject(Utils.readFile(Utils.pkgList))).has(loadPackageParam.packageName)) {
+           return;
         }
+        //将loadPackageParam的classloader替换为要hook程序Application的classloader,解决多dex导致ClassNotFound的问题
+        //而且还解决了加固hook不到的问题，替换classloader之后，拿到的就是壳的classloader了
+        XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                Context context = ((Context) param.args[0]);
+                loadPackageParam.classLoader = context.getClassLoader();
+                invokeHandleHookMethod(context, thisModulePackage, xposedModuleActionClass, loadPackageParam);
+            }
+        });
     }
 
     private void invokeHandleHookMethod(Context context, String thisAppPackage, String xposedModuleActionClass, LoadPackageParam loadPackageParam) throws Throwable {

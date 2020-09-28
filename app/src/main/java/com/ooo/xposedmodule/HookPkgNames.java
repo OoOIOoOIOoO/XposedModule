@@ -2,5 +2,8 @@ package com.ooo.xposedmodule;
 
 public class HookPkgNames {
     public static final String TAG = "OoOXPhook";
-    public static final String BINGOFIGHTER = "com.Bingo.Fighter";
+    //要hook的包名，只要在这里定义了，就会生效
+    public static final String
+            EXAMPLE = "com.example.com",
+            TEST = "com.test.a";
 }
