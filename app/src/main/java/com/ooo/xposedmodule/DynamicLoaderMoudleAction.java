@@ -2,23 +2,14 @@ package com.ooo.xposedmodule;
 
 import android.app.Application;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Bundle;
 import android.util.Log;
 
 import com.ooo.xposedmodule.hook.XDebugable;
 import com.ooo.xposedmodule.util.Utils;
-import com.ooo.xposedmodule.util.XPLog;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.File;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 
 import dalvik.system.PathClassLoader;
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -61,25 +52,12 @@ public class DynamicLoaderMoudleAction implements IXposedHookLoadPackage, IXpose
     }
 
     private void invokeHandleHookMethod(Context context, String thisAppPackage, String xposedModuleActionClass, LoadPackageParam loadPackageParam) throws Throwable {
-        String apkPath = getAppPath(context, thisAppPackage);
+        String apkPath = Utils.getAppPath(context, thisAppPackage);
         PathClassLoader pathClassLoader = new PathClassLoader(apkPath, ClassLoader.getSystemClassLoader());
         Class<?> cls = Class.forName(xposedModuleActionClass, true, pathClassLoader);
         Object instance = cls.newInstance();
         Method method = cls.getDeclaredMethod("handleLoadPackage", LoadPackageParam.class);
         method.invoke(instance, loadPackageParam);
-    }
-
-    private String getAppPath(Context context, String thisModulePackage) {
-        String apkPath = null;
-        try {
-            apkPath = context.getPackageManager().getApplicationInfo(thisModulePackage, 0).publicSourceDir;
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.e(TAG, "getPackageManager not found" + e);
-        }
-        if (new File(apkPath).exists())
-            return apkPath;
-        Log.e(TAG, "加载" + thisModulePackage + "出错,未找到apk文件");
-        return null;
     }
 
     // 实现的接口IXposedHookZygoteInit的函数

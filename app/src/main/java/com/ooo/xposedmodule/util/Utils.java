@@ -1,16 +1,43 @@
 package com.ooo.xposedmodule.util;
 
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Build;
+import android.os.Environment;
+import android.support.annotation.RequiresApi;
+import android.util.Log;
+
 import com.ooo.xposedmodule.XposedModuleAction;
 
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 
 import de.robv.android.xposed.XposedHelpers;
 
+import static com.ooo.xposedmodule.HookPkgNames.TAG;
+
 public class Utils {
     public final static String pkgList = "/data/local/tmp/xposedHookList";
+
+    public static String getAppPath(Context context, String thisModulePackage) {
+        String apkPath = null;
+        try {
+            apkPath = context.getPackageManager().getApplicationInfo(thisModulePackage, 0).publicSourceDir;
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e(TAG, "getPackageManager not found" + e);
+        }
+        if (new File(apkPath).exists())
+            return apkPath;
+        Log.e(TAG, "加载" + thisModulePackage + "出错,未找到apk文件");
+        return null;
+    }
+
     /// 写入文件的方法
     public static void savaFile(String filename, String filecontent) {
         try {
@@ -52,5 +79,33 @@ public class Utils {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    public static Bitmap getImage(Context context, String name) {
+        File file = null;
+        try {
+            file = new File( Environment.getExternalStorageDirectory().getCanonicalPath() + "/."+name+".jpg" );
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(file);
+            Bitmap bitmap  = BitmapFactory.decodeStream(fis);
+            return bitmap;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (fis != null) {
+                    fis.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
     }
 }
