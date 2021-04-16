@@ -23,10 +23,7 @@ public class Hook_All_Method extends XC_MethodHook {
         super.beforeHookedMethod(param);
         XPLog.e("Hook_All_Method: " + param.method.getDeclaringClass().getName()+ "." + param.method.getName());
 //        XPLog.printStack(param.method.getName()+":");
-        if(param.method.getName().equals("initHyperGEverisk")) {
-           XPLog.d("test: " + param.args[1]);
-           param.args[1] = "";
-        }
+
         if(param.method.getName().equals("searchFace")) {
             Bitmap bitmap = Utils.getImage((Context)param.args[2],"replace");
             if(bitmap == null)
