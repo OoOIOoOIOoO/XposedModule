@@ -1,16 +1,42 @@
 package com.ooo.xposedmodule;
 
+import android.content.Context;
+import android.telephony.TelephonyManager;
+import android.text.TextUtils;
+
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
+import com.ooo.xposedmodule.util.Utils;
 import com.ooo.xposedmodule.util.XPLog;
 
+import org.json.JSONObject;
+
+import java.util.HashMap;
+
+import static com.ooo.xposedmodule.Module.initFrames;
 import static com.ooo.xposedmodule.util.XpUtils.*;
+import static com.ooo.xposedmodule.util.XpHookComponent.*;
 
 public class XposedModuleAction implements IXposedHookLoadPackage{
-    public static ClassLoader apkClassLoader;
+    public static ClassLoader apkClassLoader, apkDynamicClassLoader;
     public static XC_LoadPackage.LoadPackageParam loadPackageParam;
     public static String packageName;
+    public static Context apkContext;
+    public void init(XC_LoadPackage.LoadPackageParam loadPackageParam, Context context){
+        String pidTime = String.valueOf(android.os.Process.myPid());
+        String pidIsHook = Utils.getSharP(context,loadPackageParam.packageName);
+        if(!TextUtils.isEmpty(pidIsHook) && pidTime.equals(pidIsHook)) {
+            XPLog.i("hook module is already initialized:"+loadPackageParam.packageName + this);
+            return;
+        } else {
+            Utils.setSharP(context, loadPackageParam.packageName, pidTime);
+            XPLog.i("init hook module:" + loadPackageParam.packageName + this);
+        }
+        this.apkContext = context;
+        handleLoadPackage(loadPackageParam);
+    }
+
     /**
      * findAndHookMethod参数说明
      * <p>
@@ -22,7 +48,6 @@ public class XposedModuleAction implements IXposedHookLoadPackage{
      */
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam){
-        XPLog.i(loadPackageParam.packageName);
         this.apkClassLoader = loadPackageParam.classLoader;
         this.loadPackageParam = loadPackageParam;
         this.packageName = loadPackageParam.packageName;

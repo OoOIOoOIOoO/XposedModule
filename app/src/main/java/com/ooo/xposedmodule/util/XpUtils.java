@@ -3,6 +3,7 @@ package com.ooo.xposedmodule.util;
 import com.ooo.xposedmodule.hook.Hook_All_Method;
 import com.ooo.xposedmodule.hook.Normal_Replace_Hook;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,53 +20,87 @@ import static com.ooo.xposedmodule.XposedModuleAction.*;
  */
 public class XpUtils {
 
+    public static Class findClass(String className){
+        return  XposedHelpers.findClass(className, apkClassLoader);
+    }
+
+    public static void hookAllMethods(Class clazz,String... notHookMethodName){
+        List<String> notMethod = new ArrayList<>();
+        if(notHookMethodName.length>0)
+            notMethod = Arrays.asList(notHookMethodName);
+        XPLog.e("hook class " +clazz.getName());
+        Field[] fields = clazz.getDeclaredFields();
+        XPLog.e("hook fields length " +fields.length);
+        for (Field f:fields) {
+            XPLog.e("hook field " + f.getName() + " : " + f.getType());
+        }
+        Method[] methods = clazz.getDeclaredMethods();
+        XPLog.e("hook methods length " +methods.length);
+        for (int i = 0; i < methods.length; i++) {
+            XPLog.e("hook method " + methods[i].getName());
+            methods[i].setAccessible(true);
+            if(!notMethod.contains(methods[i].getName()))
+                XposedBridge.hookAllMethods(clazz, methods[i].getName(), new Hook_All_Method());
+        }
+    }
     /**
      * hook 类中的所有方法
      * @param className 要hook的类名
      * @param notHookMethodName 需要过滤的方法名
      */
     public static void hookAllMethods(String className,String... notHookMethodName){
-        List<String> notMethod = new ArrayList<>();
-        if(notHookMethodName.length>0)
-            notMethod = Arrays.asList(notHookMethodName);
-        XPLog.e("hook class " +className);
         Class c = XposedHelpers.findClass(className, apkClassLoader);
-        Method[] methods = c.getDeclaredMethods();
-        for (int i = 0; i < methods.length; i++) {
-            XPLog.e("hook method " + methods[i].getName());
-            methods[i].setAccessible(true);
-            if(!notMethod.contains(methods[i].getName()))
-                XposedBridge.hookAllMethods(c, methods[i].getName(), new Hook_All_Method());
-        }
+        hookAllMethods(c,notHookMethodName);
     }
 
     /**
      * 封装xposed的hook，此方法hook类中所有同名method
-     * @param className 要hook的类名
+     * @param clazz 要hook的类名
      * @param methodName 要hook的方法
      */
-    public static void hookMethod(String className,String methodName){
-        XposedBridge.hookAllMethods(XposedHelpers.findClass(className, apkClassLoader),methodName, new Hook_All_Method());
+    public static void hookMethod(Object clazz,String methodName){
+        if(clazz instanceof String)
+            clazz = XposedHelpers.findClass((String) clazz,apkClassLoader);
+        XposedBridge.hookAllMethods((Class<?>) clazz,methodName, new Hook_All_Method());
     }
 
+    public static void hookMethod(Object clazz,String methodName, ClassLoader classLoader){
+        if(clazz instanceof String)
+            clazz = XposedHelpers.findClass((String) clazz,classLoader);
+        XposedBridge.hookAllMethods((Class<?>) clazz,methodName, new Hook_All_Method());
+    }
+    /**
+     * 封装xposed的hook，此方法hook类中所有同名method
+     * @param clazz 要hook的类名
+     * @param methodName 要hook的方法
+     * @param callback hook的实现
+     */
+    public static void hookMethod(Object clazz,String methodName,XC_MethodHook callback){
+        if(clazz instanceof String)
+            clazz = XposedHelpers.findClass((String) clazz,apkClassLoader);
+        XposedBridge.hookAllMethods((Class<?>) clazz,methodName, callback);
+    }
     /**
      * 封装xposed的hook，简单化，自定义hook实现
-     * @param className 要hook的类名
+     * @param clazz 要hook的类名
      * @param methodName 要hook的方法
      * @param parameterTypes hook方法的参数
      */
-    public static void hookMethod(String className,String methodName,Object... parameterTypes){
-        findAndHookMethod(XposedHelpers.findClass(className,apkClassLoader),methodName,new Hook_All_Method(),parameterTypes);
+    public static void hookMethod(Object clazz,String methodName,Object... parameterTypes){
+        if(clazz instanceof String)
+            clazz = XposedHelpers.findClass((String) clazz,apkClassLoader);
+        findAndHookMethod((Class<?>) clazz,methodName,new Hook_All_Method(),parameterTypes);
     }
-
     /**
      * 封装xposed的hook，简单化，自定义hook实现
-     * @param className 要hook的类名
+     * @param clazz 要hook的类名
      * @param methodName 要hook的方法
      * @param parameterTypesAndCallback hook方法的参数和自定义的hook实现
      */
-    public static void hookMethodAssignCallback(String className,String methodName,Object... parameterTypesAndCallback){
-        XposedHelpers.findAndHookMethod(className, apkClassLoader, methodName, parameterTypesAndCallback);
+    public static void hookMethodAssignCallback(Object clazz,String methodName,Object... parameterTypesAndCallback){
+        if(clazz instanceof String)
+            clazz = XposedHelpers.findClass((String) clazz,apkClassLoader);
+        XposedHelpers.findAndHookMethod((Class<?>) clazz, methodName, parameterTypesAndCallback);
     }
 
     /**
@@ -135,5 +170,31 @@ public class XpUtils {
             parameterClasses = new Class[0];
         }
         return parameterClasses;
+    }
+
+    public static void printArgs(XC_MethodHook.MethodHookParam param){
+        StringBuffer stringBuffer = new StringBuffer();
+        stringBuffer.append(param.method.getName());
+        if(param.args != null && param.args.length > 0){
+            Object[] args = param.args;
+            for (int i = 0; i < args.length; i++) {
+                stringBuffer.append(" 参数"+i+": "+ param.args[i]+" ");
+            }
+            XPLog.e(stringBuffer.toString());
+        }
+    }
+
+    public static void printmethodPath(XC_MethodHook.MethodHookParam param){
+        String methodPath = param.method.getDeclaringClass().getName()+ "." + param.method.getName();
+        XPLog.e("Hook_Method: " + methodPath);
+    }
+
+    public static void printmethodStack(XC_MethodHook.MethodHookParam param){
+        XPLog.printStack("Hook_Method: " + param.method.getDeclaringClass().getName()+ "." + param.method.getName());
+    }
+    public static void printAll(XC_MethodHook.MethodHookParam param){
+        printmethodPath(param);
+        printArgs(param);
+        printmethodStack(param);
     }
 }

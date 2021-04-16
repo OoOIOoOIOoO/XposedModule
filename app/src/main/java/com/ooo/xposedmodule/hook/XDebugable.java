@@ -2,6 +2,7 @@ package com.ooo.xposedmodule.hook;
 
 import com.ooo.xposedmodule.BuildConfig;
 import com.ooo.xposedmodule.HookPkgNames;
+import com.ooo.xposedmodule.util.Utils;
 import com.ooo.xposedmodule.util.XPLog;
 
 
@@ -14,10 +15,10 @@ public class XDebugable extends XC_MethodHook {
 
     @Override
     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-        if(!HookPkgNames.TEST.equals((String)param.args[1])) {
-            XPLog.d("app debugable not hook:" + param.args[1]);
+        if(!Utils.getXpModuleSharP("DEBUG_PKG").equals((String)param.args[1])) {
             return;
         }
+        XPLog.d("app debugable hook:" + param.args[1]);
         int id = 5;
         int flags = (Integer) param.args[id];
         if ((flags & DEBUG_ENABLE_DEBUGGER) == 0) {
@@ -26,7 +27,6 @@ public class XDebugable extends XC_MethodHook {
         param.args[id] = flags;
         if (BuildConfig.DEBUG) {
             XPLog.d("app debugable flags to 1 :" + param.args[1]);
-            XposedBridge.log("app debugable flags to 1 :" + param.args[1]);
         }
     }
 }

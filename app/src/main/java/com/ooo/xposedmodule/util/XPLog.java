@@ -2,8 +2,6 @@ package com.ooo.xposedmodule.util;
 
 import android.util.Log;
 
-import com.ooo.xposedmodule.HookPkgNames;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -12,7 +10,7 @@ public final class XPLog {
     /*
      * For filtering app specific output
      */
-    private static final String TAG = HookPkgNames.TAG;
+    private static final String TAG = Utils.TAG;
 
     public static int println(int priority, String tag, String msg) {
         int iPrintln = 0;
@@ -151,8 +149,6 @@ public final class XPLog {
         e.printStackTrace();
     }
 
-    private XPLog() {
-    }
     public static void printStack(String msg) {
         Log.e(TAG, msg + "\r\n" + Log.getStackTraceString(new Throwable()));
     }

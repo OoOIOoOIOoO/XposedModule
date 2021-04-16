@@ -2,13 +2,17 @@ package com.ooo.xposedmodule;
 
 import android.app.Application;
 import android.content.Context;
-import android.util.Log;
+import android.graphics.BitmapFactory;
+import android.hardware.Camera;
+import android.os.Build;
+import android.text.TextUtils;
 
 import com.ooo.xposedmodule.hook.XDebugable;
 import com.ooo.xposedmodule.util.Utils;
+import com.ooo.xposedmodule.util.XPLog;
+import com.ooo.xposedmodule.util.XpHookComponent;
 
-import org.json.JSONObject;
-
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import dalvik.system.PathClassLoader;
@@ -18,7 +22,6 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 
-import static com.ooo.xposedmodule.HookPkgNames.TAG;
 import static de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
 /**
@@ -36,8 +39,16 @@ public class DynamicLoaderMoudleAction implements IXposedHookLoadPackage, IXpose
 
     @Override
     public void handleLoadPackage(final LoadPackageParam loadPackageParam) throws Throwable {
-        if(!(new JSONObject(Utils.readFile(Utils.pkgList))).has(loadPackageParam.packageName)) {
-           return;
+        if (HookPkgNames.ANDROID.equals(loadPackageParam.packageName)
+                && loadPackageParam.processName.equals(HookPkgNames.ANDROID)
+                && Build.VERSION.SDK_INT<=27) {
+            XpHookComponent.hookV1V2Sign1(loadPackageParam);
+            XPLog.i("init hook sign");
+            return;
+        }
+        if(TextUtils.isEmpty(Utils.getXpModuleSharP(loadPackageParam.packageName))) {
+            XPLog.i("init hook not hook: "+ loadPackageParam.packageName);
+            return;
         }
         //将loadPackageParam的classloader替换为要hook程序Application的classloader,解决多dex导致ClassNotFound的问题
         //而且还解决了加固hook不到的问题，替换classloader之后，拿到的就是壳的classloader了
@@ -46,18 +57,27 @@ public class DynamicLoaderMoudleAction implements IXposedHookLoadPackage, IXpose
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                 Context context = ((Context) param.args[0]);
                 loadPackageParam.classLoader = context.getClassLoader();
-                invokeHandleHookMethod(context, thisModulePackage, xposedModuleActionClass, loadPackageParam);
+                invokeHandleHookMethod(context, loadPackageParam);
             }
         });
     }
 
-    private void invokeHandleHookMethod(Context context, String thisAppPackage, String xposedModuleActionClass, LoadPackageParam loadPackageParam) throws Throwable {
-        String apkPath = Utils.getAppPath(context, thisAppPackage);
-        PathClassLoader pathClassLoader = new PathClassLoader(apkPath, ClassLoader.getSystemClassLoader());
-        Class<?> cls = Class.forName(xposedModuleActionClass, true, pathClassLoader);
-        Object instance = cls.newInstance();
-        Method method = cls.getDeclaredMethod("handleLoadPackage", LoadPackageParam.class);
-        method.invoke(instance, loadPackageParam);
+    private void invokeHandleHookMethod(Context context, LoadPackageParam loadPackageParam){
+        try {
+            String apkPath = Utils.getAppPath(context, thisModulePackage);
+            PathClassLoader pathClassLoader = new PathClassLoader(apkPath, ClassLoader.getSystemClassLoader());
+            Class<?> cls = null;
+            try {
+                cls = Class.forName(xposedModuleActionClass, true, pathClassLoader);
+            } catch (ClassNotFoundException e) {
+                cls = Class.forName(xposedModuleActionClass);
+            }
+            Object instance = cls.newInstance();
+            Method method = cls.getDeclaredMethod("init", LoadPackageParam.class,Context.class);
+            method.invoke(instance, loadPackageParam,context);
+        } catch (Throwable e) {
+            XPLog.i("init hook error:" + e);
+        }
     }
 
     // 实现的接口IXposedHookZygoteInit的函数
@@ -65,7 +85,8 @@ public class DynamicLoaderMoudleAction implements IXposedHookLoadPackage, IXpose
     public void initZygote(final IXposedHookZygoteInit.StartupParam startupParam) throws Throwable {
         // /frameworks/base/core/java/android/os/Process.java
         // Hook类android.os.Process的start函数
-        Log.e(TAG, "initZygote");
+        XPLog.e("initZygote");
         XposedBridge.hookAllMethods(android.os.Process.class, "start", new XDebugable());
+
     }
 }
